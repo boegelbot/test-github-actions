@@ -1,0 +1,38 @@
+name: test
+on:
+  check_suite:
+    types: [completed]
+  issue_comment:
+    types: [created]
+  issues:
+    types: [milestoned]
+  pull_request:
+    types: [labeled]
+jobs:
+  react-to-comment:
+    runs-on: ubuntu-latest
+    steps:
+    - name: install dependencies
+      run: |
+        pip install PyGithub
+        pip install git+https://github.com/boegel/py-github-actions.git
+    - name: react to comment
+      shell: python
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        from actions.event import get_event_data, triggered_by
+        from actions.issues import *
+
+        # print event data (just for debugging purposes)
+        event_data = get_event_data(verbose=True)
+
+        print('comments:\n' + '\n'.join(get_issue_comments()))
+        print('labels: ' + ', '.join(get_label_names()))
+        print('milestone: %s' % get_milestone_title())
+        if pr_context():
+          print('PR status: ' + get_pr_status())
+
+        if triggered_by('issue_comment'):
+          reply_txt = "@%(sender_login)s: Thank you for your comment '%(comment_body)s'!"
+          post_comment(reply_txt)
